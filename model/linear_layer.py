@@ -15,12 +15,12 @@ def construct_linear_layer(
         parameters = {"weight": weight, "bias": bias}
 
         def linear_layer(parameters, data):
-            return data @ parameters["weight"]
+            return data @ parameters["weight"] + parameters["bias"]
     else:
         parameters = {"weight": weight}
 
         def linear_layer(parameters, data):
-            return data @ parameters["weight"] + parameters["bias"]
+            return data @ parameters["weight"] 
 
     return linear_layer, parameters
 
