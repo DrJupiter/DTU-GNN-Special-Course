@@ -29,7 +29,8 @@ def construct_update_fn(feature_dim=128, key=jax.random.PRNGKey(42), dtype=jnp.f
         u = U_fn(params["U_fn"], v)
         v = V_fn(params["V_fn"], v)
 
-        v_norm = jnp.linalg.norm(v, axis=-2, keepdims=True)
+        v_norm = jnp.linalg.norm(v, axis=-1, keepdims=True) # i do over axis=-1, he does axis=-2, but he has (N,1,feature_dim) shape. (makes no sense to norm over 1 dim)
+        v_norm = jnp.repeat(v_norm, feature_dim, axis=-1, total_repeat_length=feature_dim) # illigal activity? for jit?
         s = jnp.concatenate((s, v_norm), axis=-1)
         s = W1_fn(params["W1_fn"], s)
         s = nn.silu(s)
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     key = jax.random.PRNGKey(42)
     split_keys = jax.random.split(key,4)
 
-    N,feature_dim = 1,10
+    N,feature_dim = 2,10
 
     update_fn, p_update_fn = construct_update_fn(feature_dim, split_keys[0])
 
@@ -63,26 +64,34 @@ if __name__ == "__main__":
 
     assert predictions[0].shape == (N,feature_dim) and predictions[1].shape == (N,feature_dim)
 
-    # update_fn = jax.jit(update_fn)
+    update_fn = jax.jit(update_fn)
 
-    # out = update_fn(p_update_fn, s,v)
+    s = jax.random.normal(split_keys[1], (N, feature_dim))
+    v = jax.random.normal(split_keys[2], (N, feature_dim))
 
-    # assert predictions[0].shape == (10,) and predictions[1].shape == (10,)
+    predictions = update_fn(p_update_fn, s, v)
 
-    # loss_fn = lambda params, data, target: (
-    #     (linear_layer_1(params, data) - target) ** 2
-    # ).mean()
+    assert predictions[0].shape == (N,feature_dim) and predictions[1].shape == (N,feature_dim)
 
-    # target = jax.random.normal(jax.random.PRNGKey(0), (3, 2))
+    summ = lambda x,y: x+y
 
-    # grad_fn = jax.grad(loss_fn)
+    loss_fn = lambda params, data, target: (
+        (summ(*update_fn(params, data[0], data[1])) - target) ** 2
+    ).mean()
 
-    # grads = grad_fn(p_linear_layer_1, data, target)
+    target = jax.random.normal(jax.random.PRNGKey(0), (N, feature_dim))
 
-    # LEARNING_RATE = 1e-2
+    data = [v,s]
 
-    # p_linear_layer_1 = jax.tree.map(
-    #     lambda p, g: p - LEARNING_RATE * g, p_linear_layer_1, grads
-    # )
+
+    grad_fn = jax.grad(loss_fn)
+
+    grads = grad_fn(p_update_fn, data, target)
+
+    LEARNING_RATE = 1e-2
+
+    p_update_fn = jax.tree.map(
+        lambda p, g: p - LEARNING_RATE * g, p_update_fn, grads
+    )
 
 # %%
