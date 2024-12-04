@@ -83,15 +83,15 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
 if __name__ == "__main__" or True:
 
     ### init ###
-    N,feature_dim = 2,128
+    N, feature_dim, vocab_dim = 2, 128, 10
 
-    model, params = construct_PaiNN(feature_dim)
+    model, params = construct_PaiNN(vocab_dim=vocab_dim, feature_dim=feature_dim)
 
     key = jax.random.PRNGKey(42)
     split_keys = jax.random.split(key,4)
 
     v0 = jax.random.normal(split_keys[0], (N, 3, feature_dim))
-    s0 = jax.random.normal(split_keys[1], (N, 1, feature_dim))
+    s0 = jax.random.normal(split_keys[1], (N, 1, vocab_dim))
     r = jax.random.normal(split_keys[2], (N, 3))
 
     ### Basic test ###
