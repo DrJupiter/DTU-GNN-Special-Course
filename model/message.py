@@ -77,7 +77,7 @@ def construct_message(
 
         # W
 
-        # B x 1
+        # B x 3 -> B x 1
         norm_r = (jax.vmap(lambda x: (x @ x)**0.5)(directions)).reshape(-1, 1)
 
         # B x 1 -> B x n
@@ -118,9 +118,9 @@ if __name__ == "__main__":
 
     message, p_message = construct_message(10, n=20)
 
-    scalars = jax.random.normal(jax.random.PRNGKey(0), (3, 1, 10))
-    directions = jax.random.normal(jax.random.PRNGKey(0), (3,3))
-    vectors = jax.random.normal(jax.random.PRNGKey(0), (3, 3, 10))
+    scalars = jax.random.normal(jax.random.PRNGKey(0), (5, 1, 10))
+    directions = jax.random.normal(jax.random.PRNGKey(0), (5, 3))
+    vectors = jax.random.normal(jax.random.PRNGKey(0), (5, 3, 10))
 
     delta_s, delta_v = message(p_message, vectors, scalars, directions)
 
