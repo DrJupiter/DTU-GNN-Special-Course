@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 
 
 def construct_linear_layer(
@@ -25,7 +26,7 @@ def construct_linear_layer(
     return linear_layer, parameters
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" or True:
     linear_layer_1, p_linear_layer_1 = construct_linear_layer(5, 2)
 
     data = jax.random.normal(jax.random.PRNGKey(0), (3, 5))
@@ -55,3 +56,5 @@ if __name__ == "__main__":
     p_linear_layer_1 = jax.tree.map(
         lambda p, g: p - LEARNING_RATE * g, p_linear_layer_1, grads
     )
+
+    assert jnp.abs(1-jnp.isclose(jnp.array([jnp.abs(leaf).sum() for leaf in jax.tree.leaves(grads)]), 0)).prod()
