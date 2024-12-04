@@ -4,8 +4,7 @@ import jax
 import jax.numpy as jnp
 import jax.nn as nn
 
-# from model.linear_layer import construct_linear_layer
-from linear_layer import construct_linear_layer # for testing
+from model.linear_layer import construct_linear_layer
 
 #%%
 
@@ -29,8 +28,7 @@ def construct_update_fn(feature_dim=128, key=jax.random.PRNGKey(42), dtype=jnp.f
         u = U_fn(params["U_fn"], v)
         v = V_fn(params["V_fn"], v)
 
-        v_norm = jnp.linalg.norm(v, axis=-1, keepdims=True) # i do over axis=-1, he does axis=-2, but he has (N,1,feature_dim) shape. (makes no sense to norm over 1 dim)
-        v_norm = jnp.repeat(v_norm, feature_dim, axis=-1, total_repeat_length=feature_dim) # illigal activity? for jit?
+        v_norm = jnp.linalg.norm(v, axis=-2, keepdims=True) # i do over axis=-1, he does axis=-2, but he has (N,1,feature_dim) shape. (makes no sense to norm over 1 dim)
         s = jnp.concatenate((s, v_norm), axis=-1)
         s = W1_fn(params["W1_fn"], s)
         s = nn.silu(s)
@@ -49,7 +47,7 @@ def construct_update_fn(feature_dim=128, key=jax.random.PRNGKey(42), dtype=jnp.f
 
 #%%
 
-if __name__ == "__main__":
+if __name__ == "__main__" or True:
     key = jax.random.PRNGKey(42)
     split_keys = jax.random.split(key,4)
 
@@ -57,41 +55,36 @@ if __name__ == "__main__":
 
     update_fn, p_update_fn = construct_update_fn(feature_dim, split_keys[0])
 
-    s = jax.random.normal(split_keys[1], (N, feature_dim))
-    v = jax.random.normal(split_keys[2], (N, feature_dim))
+    s = jax.random.normal(split_keys[1], (N, 1, feature_dim))
+    v = jax.random.normal(split_keys[2], (N, 3, feature_dim))
 
-    predictions = update_fn(p_update_fn, s, v)
+    pred_v, pred_s = update_fn(p_update_fn, v, s)
 
-    assert predictions[0].shape == (N,feature_dim) and predictions[1].shape == (N,feature_dim)
+    assert pred_v.shape == (N, 3, feature_dim) and pred_s.shape == (N, 1, feature_dim)
 
     update_fn = jax.jit(update_fn)
 
-    s = jax.random.normal(split_keys[1], (N, feature_dim))
-    v = jax.random.normal(split_keys[2], (N, feature_dim))
+    pred_v, pred_s = update_fn(p_update_fn, v, s)
 
-    predictions = update_fn(p_update_fn, s, v)
+    assert pred_v.shape == (N, 3, feature_dim) and pred_s.shape == (N, 1, feature_dim)
 
-    assert predictions[0].shape == (N,feature_dim) and predictions[1].shape == (N,feature_dim)
-
-    summ = lambda x,y: x+y
+    summ = lambda x,y: x.sum()+y.sum()
 
     loss_fn = lambda params, data, target: (
         (summ(*update_fn(params, data[0], data[1])) - target) ** 2
     ).mean()
 
-    target = jax.random.normal(jax.random.PRNGKey(0), (N, feature_dim))
+    target = jax.random.normal(jax.random.PRNGKey(0), (1))
 
     data = [v,s]
-
 
     grad_fn = jax.grad(loss_fn)
 
     grads = grad_fn(p_update_fn, data, target)
 
+    assert jnp.abs(1-jnp.isclose(jnp.array([jnp.abs(leaf).sum() for leaf in jax.tree.leaves(grads)]), 0)).prod()
     LEARNING_RATE = 1e-2
 
     p_update_fn = jax.tree.map(
         lambda p, g: p - LEARNING_RATE * g, p_update_fn, grads
     )
-
-# %%
