@@ -75,7 +75,7 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
         s = nn.silu(s)
         s = W2_fn(weights["W2_fn"],s)
 
-        return s.sum(-1) # Sum over feature dim
+        return s.sum(0) # Index sum, sum over each molecule # see jax.ops.segment_sum
 
     return PaiNN, weights
 
