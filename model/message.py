@@ -45,6 +45,8 @@ def construct_message(
     def min_math(a, b):
         return (a + b - jax.numpy.abs(a - b))/2
 
+    # define mask on r_ij and apply it after linear layer, 
+    #   to only focus on the values that are relevant
     def f_cut(direction_embeddings):
         # B x F * 3 - 1 -> B x F * 3
         delta = direction_embeddings - cutoff_radius
@@ -79,6 +81,21 @@ def construct_message(
 
         # B x 3 -> B x 1
         norm_r = (jax.vmap(lambda x: (x @ x)**0.5)(directions)).reshape(-1, 1)
+        
+        
+        # edges.shape = Ex3
+
+        # edges = [
+        # M1_A1 -> M1_A2
+        # M1_A1 -> M1_A3
+        # M1_A1 -> M1_A25
+        # M1_A2 -> M1_A1
+        # ...
+        #  M2_A2 -> M2_A1
+        # ...
+        #  M22_A2 -> M22_A1   [x,y,z]
+        # ]
+
 
         # B x 1 -> B x n
         r = radial_basis(norm_r)
@@ -88,7 +105,7 @@ def construct_message(
         # question here is iff it should be f_cut(norm_r) * r?
 
         # B x F * 3 -> B x F * 3
-        r = f_cut(r)
+        r = f_cut(r) # TODO: see note above f_cut
                 #  B x 1 x F * 3 *  B x 1 x F * 3
         combined = s             *  r[:, jax.numpy.newaxis, :]
 
@@ -102,16 +119,18 @@ def construct_message(
 
         # question which axis should be summed accross?
         # B x 1 x F -> 1 x F
-        delta_s = delta_s.sum(axis=0)
+        delta_s = delta_s.sum(axis=0) # TODO: expand to take multiple molecules by making B an unfolded Bxn_nodes
         # B x 3 x F -> 3 x F
         delta_v = delta_v.sum(axis=0)
 
                 # 3 x F -> 1 x 3 x F               1 x F -> 1 x 1 x F
         return delta_v[jax.numpy.newaxis, :, :], delta_s[jax.numpy.newaxis, :, :]
 
-
-
-
+    # B = batches * n_nodes
+    # which belongs to which = idx = [0,0,0,0,1,1,1,2,2,3,3,3] = B  
+    #                                [val_0,  val_1, val_2, val_3].replicate(according to idx)
+    #                          [v0,v0,v0,v0,v1,v1,v1,v2,v2,v3,v3]
+                                # shape = 4
     return message, parameters
 
 if __name__ == "__main__":
