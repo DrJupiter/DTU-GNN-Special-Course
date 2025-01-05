@@ -38,13 +38,20 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
             "U3_fn": U3_weights,
     }
 
-    def PaiNN(weights, v, s, r):
+    def PaiNN(weights, v, s, r, idx_i, idx_j, idx_m):
+        """
+
+        v (Vector feautures): A x 3 x F
+        s (Scalar feautures): A x 1 x F
+        r (Directions): EDGES x 3
+
+        """
 
         ### Embedding
         s = embed_fn(weights["embed_fn"], s)
 
         ### 1 - messsage + update
-        d_v,d_s = M1_fn(weights["M1_fn"], v, s, r)
+        d_v,d_s = M1_fn(weights["M1_fn"], v, s, r, idx_i=idx_i, idx_j=idx_j)
         v = d_v + v
         s = d_s + s
 
@@ -53,7 +60,7 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
         s = d_s + s
 
         ## 2 - messsage + update
-        d_v,d_s = M2_fn(weights["M2_fn"], v, s, r)
+        d_v,d_s = M2_fn(weights["M2_fn"], v, s, r, idx_i=idx_i, idx_j=idx_j)
         v = d_v + v
         s = d_s + s
 
@@ -62,7 +69,7 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
         s = d_s + s
 
         ### 3 - messsage + update
-        d_v,d_s = M3_fn(weights["M3_fn"], v, s, r)
+        d_v,d_s = M3_fn(weights["M3_fn"], v, s, r, idx_i=idx_i, idx_j=idx_j)
         v = d_v + v
         s = d_s + s
 
@@ -75,10 +82,9 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
         s = nn.silu(s)
         s = W2_fn(weights["W2_fn"],s)
 
-        return s.sum(0) # Index sum, sum over each molecule # see jax.ops.segment_sum
+        return jax.ops.segment_sum(s, idx_m) # Index sum, sum over each molecule # see jax.ops.segment_sum
 
     return PaiNN, weights
-
 
 if __name__ == "__main__" or True:
 
@@ -123,4 +129,4 @@ if __name__ == "__main__" or True:
     )
 
     # Check that all layers's weights are being updated
-    assert jnp.abs(1-jnp.isclose(jnp.array([jnp.abs(leaf).sum() for leaf in jax.tree.leaves(grads)]), 0)).prod() 
+    assert jnp.abs(1-jnp.isclose(jnp.array([jnp.abs(leaf).sum() for leaf in jax.tree.leaves(grads)]), 0)).prod()
