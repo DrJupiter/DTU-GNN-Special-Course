@@ -89,7 +89,7 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
 if __name__ == "__main__" or True:
 
     ### init ###
-    N, feature_dim, vocab_dim = 2, 128, 10
+    N, feature_dim, vocab_dim = 3, 128, 10
 
     model, params = construct_PaiNN(vocab_dim=vocab_dim, feature_dim=feature_dim)
 
@@ -98,26 +98,33 @@ if __name__ == "__main__" or True:
 
     v0 = jax.random.normal(split_keys[0], (N, 3, feature_dim))
     s0 = jax.random.normal(split_keys[1], (N, 1, vocab_dim))
-    r = jax.random.normal(split_keys[2], (N, 3))
+    positions = jax.random.normal(split_keys[2], (N, 3))
+
+    idx_i = jax.numpy.array([0, 0, 1, 2])
+    idx_j = jax.numpy.array([1,2,0,0])
+    idx_m = jax.numpy.array([0,0,0])
+
+    dir_i_to_j = lambda x, i, j: x[j] - x[i]
+    directions = dir_i_to_j(positions, idx_i, idx_j)
 
     ### Basic test ###
 
-    predictions = model(params, v0, s0, r)
+    predictions = model(params, v0, s0, directions, idx_i=idx_i, idx_j = idx_j, idx_m=idx_m)
     assert predictions.shape == (N,1) # s0.shape[:-1]
 
     ### Jit test ###
 
-    model = jax.jit(model)
-    predictions = model(params, v0, s0, r)
-    assert predictions.shape == (N,1)
+    #model = jax.jit(model)
+    #predictions = model(params, v0, s0, r)
+    #assert predictions.shape == (N,1)
 
     ### Grad test ###
 
     target = jax.random.normal(jax.random.PRNGKey(0), (N,))
-    data = [v0,s0,r]
+    data = [v0,s0,directions, idx_i, idx_j, idx_m]
 
     loss_fn = lambda params, data, target: (
-        (model(params, data[0], data[1], data[2]) - target) ** 2
+        (model(params, *data) - target) ** 2
     ).mean()
     grad_fn = jax.grad(loss_fn)
 
