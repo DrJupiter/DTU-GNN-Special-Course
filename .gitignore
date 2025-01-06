@@ -163,3 +163,5 @@ cython_debug/
 
 data/*.db
 data/*.npz
+splitting.lock
+qm9.db
