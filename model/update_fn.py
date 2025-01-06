@@ -47,7 +47,7 @@ def construct_update_fn(feature_dim=128, key=jax.random.PRNGKey(42), dtype=jnp.f
 
 #%%
 
-if __name__ == "__main__" or True:
+if __name__ == "__main__":
     key = jax.random.PRNGKey(42)
     split_keys = jax.random.split(key,4)
 

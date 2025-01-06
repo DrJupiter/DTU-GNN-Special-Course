@@ -15,13 +15,14 @@ def construct_embedding_fn(vocab_size=1, embed_dim=128, key=jax.random.PRNGKey(4
     }
 
     def embed_fn(params, s):
+        s = jax.nn.one_hot(s, vocab_size)
         s = W1_fn(params["W1_fn"], s)
         return s
 
     return embed_fn, weights
 
-if __name__ == "__main__" or True:
-    
+if __name__ == "__main__":
+
     ### init ###
     key = jax.random.PRNGKey(42)
     split_keys = jax.random.split(key,4)

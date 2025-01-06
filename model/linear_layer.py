@@ -5,7 +5,8 @@ import jax.numpy as jnp
 def construct_linear_layer(
     in_dim, out_dim, bias=True, key=jax.random.PRNGKey(0), dtype=jax.numpy.float32
 ):
-    initializer = jax.nn.initializers.he_normal()
+    #initializer = jax.nn.initializers.he_normal()
+    initializer = jax.nn.initializers.truncated_normal(stddev=0.15, lower=-0.15, upper=0.15)
     key, *split = jax.random.split(key, 2 + bias)
     weight = initializer(split[0], (in_dim, out_dim), dtype=dtype)
 
@@ -21,12 +22,12 @@ def construct_linear_layer(
         parameters = {"weight": weight}
 
         def linear_layer(parameters, data):
-            return data @ parameters["weight"] 
+            return data @ parameters["weight"]
 
     return linear_layer, parameters
 
 
-if __name__ == "__main__" or True:
+if __name__ == "__main__":
     linear_layer_1, p_linear_layer_1 = construct_linear_layer(5, 2)
 
     data = jax.random.normal(jax.random.PRNGKey(0), (3, 5))
