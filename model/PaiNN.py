@@ -38,6 +38,8 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
             "U3_fn": U3_weights,
     }
 
+    clip_range = 1e2
+
     def PaiNN(weights, v, s, r, idx_i, idx_j, idx_m):
         """
 
@@ -52,30 +54,30 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
 
         ### 1 - messsage + update
         d_v,d_s = M1_fn(weights["M1_fn"], v, s, r, idx_i=idx_i, idx_j=idx_j)
-        v = d_v + v
-        s = d_s + s
+        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
+        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
 
         d_v,d_s = U1_fn(weights["U1_fn"], v, s)
-        v = d_v + v
-        s = d_s + s
+        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
+        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
 
         ## 2 - messsage + update
         d_v,d_s = M2_fn(weights["M2_fn"], v, s, r, idx_i=idx_i, idx_j=idx_j)
-        v = d_v + v
-        s = d_s + s
+        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
+        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
 
         d_v,d_s = U2_fn(weights["U2_fn"], v, s)
-        v = d_v + v
-        s = d_s + s
+        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
+        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
 
         ### 3 - messsage + update
         d_v,d_s = M3_fn(weights["M3_fn"], v, s, r, idx_i=idx_i, idx_j=idx_j)
-        v = d_v + v
-        s = d_s + s
+        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
+        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
 
         d_v,d_s = U3_fn(weights["U3_fn"], v, s)
-        v = d_v + v # TODO: asses if needed
-        s = d_s + s
+        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
+        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
 
         ### Linear layers
         s = W1_fn(weights["W1_fn"],s)
