@@ -27,6 +27,28 @@ def construct_dataloaders(config: ConfigTrain):
 
     return dataset.train_dataloader(), dataset.test_dataloader(), dataset.val_dataloader()
 
+def compute_mean_std(dataloader, key):
+
+    n = 0
+    total = 0
+
+    for item in dataloader:
+        item = item[key]
+        n += len(item)
+        total += item.sum()
+
+    mean = total/n
+
+    std = 0
+
+    for item in dataloader:
+        item = item[key]
+        std += ((mean - item) ** 2).sum()
+
+    std = (std/n)**0.5
+    return mean, std
+
+
 if __name__ == "__main__":
     from experiment.config import BuilderConfigExperiment
     from transformers import set_seed
@@ -36,17 +58,20 @@ if __name__ == "__main__":
         BuilderConfigExperiment()
         .set_vocab_dim(20)
         .set_feature_dim(256)
-        .set_train_size(150_000)
+        .set_train_size(100_000)
         .set_validation_size(15_000)
-        .set_batch_size(2)
+        .set_batch_size(1024)
         .set_num_workers(6)
         .set_radius(3.)
         .set_path("./data/qm9.db")
-        .set_split_file("./data/split.npz")
+        .set_split_file("./data/split2.npz")
         .build()
     )
 
     train, test, val = construct_dataloaders(config.train)
+    print(compute_mean_std(train, "energy_U0"))
+    import sys
+    sys.exit(0)
 
     data_point = (next(iter(train)))
     print(data_point)
