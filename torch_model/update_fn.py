@@ -16,7 +16,8 @@ class Update(nn.Module):
     def forward(self, vectors, scalars):
         u = self.lin_u(vectors)
         v = self.lin_v(vectors)
-
+        
+        # A x 3 x F
         v_norm = torch.linalg.norm(v, dim=-2, keepdim=True)
 
         s = torch.concat((scalars, v_norm), dim=-1)

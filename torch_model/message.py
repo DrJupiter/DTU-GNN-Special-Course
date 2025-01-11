@@ -14,7 +14,7 @@ def temporary_sys_path(path):
 
 import torch
 from torch import nn
-from torch_scatter import scatter_add
+from torch_scatter import scatter_add, scatter
 
 
 def min_max(a,b):
@@ -95,14 +95,13 @@ class Message(nn.Module):
         # EDGES x 3 x F -> A x 3 x F
 
         # aggregate
-
         # EDGES x 1 x F -> A x 1 x F
-        delta_s = scatter_add(delta_s, idx_j)
+        delta_s = scatter(delta_s, idx_j, dim=0)
         # EDGES x 3 x F -> A x 3 x F
-        delta_v = scatter_add(delta_v, idx_j)
+        delta_v = scatter(delta_v, idx_j, dim=0)
 
-        assert delta_v.shape == vectors.shape
-        assert delta_s.shape == delta_s.shape
+        assert delta_v.shape == vectors.shape, f"{delta_v.shape} != {vectors.shape}"
+        assert delta_s.shape == scalars.shape, f"{delta_s.shape} != {scalars.shape}"
 
         return delta_v, delta_s
 
