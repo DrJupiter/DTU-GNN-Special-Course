@@ -6,7 +6,8 @@ def construct_linear_layer(
     in_dim, out_dim, bias=True, key=jax.random.PRNGKey(0), dtype=jax.numpy.float32
 ):
     #initializer = jax.nn.initializers.he_normal()
-    initializer = jax.nn.initializers.truncated_normal(stddev=0.05, lower=-0.05, upper=0.05)
+    #initializer = jax.nn.initializers.glorot_normal(stddev=0.05, lower=-0.05, upper=0.05)
+    initializer = jax.nn.initializers.glorot_normal()
     key, *split = jax.random.split(key, 2 + bias)
     weight = initializer(split[0], (in_dim, out_dim), dtype=dtype)
 

@@ -16,7 +16,7 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
     embed_fn, embed_weights = construct_embedding_fn(vocab_dim, feature_dim, split_keys[0], dtype=dtype)
 
     W1_fn, W1_weights = construct_linear_layer(feature_dim, feature_dim, bias=True,  key=split_keys[1], dtype=dtype)
-    W2_fn, W2_weights = construct_linear_layer(feature_dim, feature_dim, bias=True,  key=split_keys[2], dtype=dtype)
+    W2_fn, W2_weights = construct_linear_layer(feature_dim, 1, bias=True,  key=split_keys[2], dtype=dtype)
 
     M1_fn, M1_weights = construct_message(feature_dim,  key=split_keys[3], dtype=dtype)
     M2_fn, M2_weights = construct_message(feature_dim,  key=split_keys[4], dtype=dtype)
@@ -38,7 +38,6 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
             "U3_fn": U3_weights,
     }
 
-    clip_range = 1e2
 
     def PaiNN(weights, v, s, r, idx_i, idx_j, idx_m):
         """
@@ -54,35 +53,36 @@ def construct_PaiNN(vocab_dim=10, feature_dim=128, key=jax.random.PRNGKey(42), d
 
         ### 1 - messsage + update
         d_v,d_s = M1_fn(weights["M1_fn"], v, s, r, idx_i=idx_i, idx_j=idx_j)
-        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
-        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
+        v = d_v + v
+        s = d_s + s
 
         d_v,d_s = U1_fn(weights["U1_fn"], v, s)
-        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
-        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
+        v = d_v + v
+        s = d_s + s
 
         ## 2 - messsage + update
         d_v,d_s = M2_fn(weights["M2_fn"], v, s, r, idx_i=idx_i, idx_j=idx_j)
-        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
-        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
+        v = d_v + v
+        s = d_s + s
 
         d_v,d_s = U2_fn(weights["U2_fn"], v, s)
-        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
-        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
+        v = d_v + v
+        s = d_s + s
 
         ### 3 - messsage + update
         d_v,d_s = M3_fn(weights["M3_fn"], v, s, r, idx_i=idx_i, idx_j=idx_j)
-        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
-        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
+        v = d_v + v
+        s = d_s + s
 
         d_v,d_s = U3_fn(weights["U3_fn"], v, s)
-        v = jax.numpy.clip(d_v, -clip_range, clip_range) + v
-        s = jax.numpy.clip(d_s, -clip_range, clip_range) + s
+        v = d_v + v
+        s = d_s + s
 
         ### Linear layers
         s = W1_fn(weights["W1_fn"],s)
         s = nn.silu(s)
         s = W2_fn(weights["W2_fn"],s)
+
         # M x R x F
         return jax.numpy.squeeze(jax.ops.segment_sum(s, idx_m).sum(axis=-1)) # Index sum, sum over each molecule # see jax.ops.segment_sum
 

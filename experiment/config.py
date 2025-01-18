@@ -9,6 +9,7 @@ class ConfigTrain(BaseModel):
     radius: float
     path: str
     split_file: str
+    target_key: str
 
 class ConfigModel(BaseModel):
     vocab_dim: int
@@ -105,6 +106,15 @@ class BuilderConfigExperiment:
             self._train_config["radius"] = 2
         else:
             raise ValueError(f"Unknown experiment profile: {profile}")
+        return self
+
+    def set_target_key(self, key: str):
+        """
+        Set target key for training, testing and evaluating
+        """
+
+        self._train_config["target_key"] = key
+
         return self
 
     def build(self) -> ConfigExperiment:

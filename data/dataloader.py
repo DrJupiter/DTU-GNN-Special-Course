@@ -27,6 +27,39 @@ def construct_dataloaders(config: ConfigTrain):
 
     return dataset.train_dataloader(), dataset.test_dataloader(), dataset.val_dataloader()
 
+def compute_mean_std(loader, key):
+    """
+    Computes the mean and standard deviation of a dataset using a PyTorch DataLoader.
+
+    Args:
+        loader (torch.utils.data.DataLoader): DataLoader for the dataset.
+
+    Returns:
+        tuple: Mean and standard deviation tensors for the dataset.
+    """
+    # Initialize variables to accumulate the sum and squared sum
+    total = 0.0
+    total_samples = 0
+
+    for data in loader:
+        data = data[key]
+        batch_samples = data.size(0)  # Number of samples in the batch
+        total += data.sum()
+        total_samples += batch_samples
+
+    mean = total / total_samples
+
+    std = 0.0
+
+    for data in loader:
+        data = data[key]
+        std += ((data - mean)**2).sum()
+
+    std = (std / total_samples)**0.5
+
+
+    return mean, std
+
 if __name__ == "__main__":
     from experiment.config import BuilderConfigExperiment
     from transformers import set_seed
@@ -38,7 +71,7 @@ if __name__ == "__main__":
         .set_feature_dim(256)
         .set_train_size(150_000)
         .set_validation_size(15_000)
-        .set_batch_size(2)
+        .set_batch_size(256)
         .set_num_workers(6)
         .set_radius(3.)
         .set_path("./data/qm9.db")
@@ -47,6 +80,7 @@ if __name__ == "__main__":
     )
 
     train, test, val = construct_dataloaders(config.train)
+    print(compute_mean_std(train, "energy_U0"))
 
     data_point = (next(iter(train)))
     print(data_point)
