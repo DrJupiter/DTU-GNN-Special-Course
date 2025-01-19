@@ -2,6 +2,7 @@ from experiment.config import ConfigTrain
 
 from schnetpack.datasets import QM9
 import schnetpack.transform as transform
+import torch
 
 def construct_dataloaders(config: ConfigTrain):
 
@@ -19,13 +20,39 @@ def construct_dataloaders(config: ConfigTrain):
             remove_uncharacterized=True,
             num_workers=config.num_workers,
             split_file=config.split_file,
-            #pin_memory=False,
+            pin_memory=config.device != "cpu",
             #load_properties=[config.prop],
     )
     dataset.prepare_data()
     dataset.setup()
 
     return dataset.train_dataloader(), dataset.test_dataloader(), dataset.val_dataloader()
+
+def prepare_data_point(data, feature_dim, key, device, normalize):
+
+        positions = data["_positions"]
+        atomic_numbers = data["_atomic_numbers"]
+        idx_i = data["_idx_i"]
+        idx_j = data["_idx_j"]
+        idx_m = data["_idx_m"]
+
+        # Construct s0, v0, and directions
+        s0 = atomic_numbers[:, None]
+        v0 = torch.zeros((len(atomic_numbers), 3, feature_dim))
+        directions = positions[idx_j] - positions[idx_i]
+
+        # Fetch target (e.g. property to predict)
+        target = normalize(data[key]).to(device)
+
+        input_data =  {"v": v0.to(device),
+                       "s": s0.to(device),
+                       "r": directions.to(device),
+                       "idx_i": idx_i.to(device),
+                       "idx_j": idx_j.to(device),
+                       "idx_m": idx_m.to(device)}
+
+        return input_data, target
+
 
 def compute_mean_std(dataloader, key):
 

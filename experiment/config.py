@@ -9,10 +9,15 @@ class ConfigTrain(BaseModel):
     radius: float
     path: str
     split_file: str
+    seed: int
+    target_key: str
+    device: str = "cpu"
+    normalize: bool = False
 
 class ConfigModel(BaseModel):
     vocab_dim: int
     feature_dim: int
+    device: str = "cpu"
 
 class ConfigExperiment(BaseModel):
     model: ConfigModel
@@ -27,6 +32,11 @@ class ConfigExperiment(BaseModel):
     def save(self, path: str | Path):
         with open(path, "w") as f:
             f.write(self.model_dump_json(indent=4))
+
+    def set_device(self, device: str):
+        self.train.device = device
+        self.model.device = device
+        return self
 
 class BuilderConfigExperiment:
     """
@@ -107,6 +117,18 @@ class BuilderConfigExperiment:
             raise ValueError(f"Unknown experiment profile: {profile}")
         return self
 
+    def set_seed(self, seed: int):
+        self._train_config["seed"] = seed
+        return self
+
+    def set_target_key(self, key: str):
+        self._train_config["target_key"] = key
+        return self
+
+    def set_normalize(self, normalize: bool):
+        self._train_config["normalize"] = normalize
+        return self
+
     def build(self) -> ConfigExperiment:
         model = ConfigModel(**self._model_config)
         train = ConfigTrain(**self._train_config)
@@ -122,6 +144,8 @@ if __name__ == "__main__":
         .set_validation_size(15_000)
         .set_batch_size(64)
         .set_num_workers(12)
+        .set_seed(0)
+        .set_target_key("energy_U0")
         .set_path("some/data/dataset/")
         .set_split_file("splits/train_val.json")
         .build()
