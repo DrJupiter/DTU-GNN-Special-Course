@@ -81,24 +81,25 @@ if __name__ == "__main__":
     from transformers import set_seed
     set_seed(0)
 
-    config = (
-        BuilderConfigExperiment()
-        .set_vocab_dim(20)
-        .set_feature_dim(256)
-        .set_train_size(100_000)
-        .set_validation_size(15_000)
-        .set_batch_size(1024)
-        .set_num_workers(6)
-        .set_radius(3.)
-        .set_path("./data/qm9.db")
-        .set_split_file("./data/split2.npz")
-        .build()
+    config = (BuilderConfigExperiment()
+    .set_vocab_dim(20)
+    .set_feature_dim(128)
+    .set_train_size(100_000)
+    .set_validation_size(15_000)
+    .set_batch_size(100)
+    .set_num_workers(6)
+    .set_radius(3.)
+    .set_seed(0)
+    .set_target_key("dummy")
+    .set_normalize(False)
+    .set_path("./data/qm9.db")
+    .set_split_file("./data/splits/dummy.npz")
+    .build()
     )
-
     train, test, val = construct_dataloaders(config.train)
-    print(compute_mean_std(train, "energy_U0"))
-    import sys
-    sys.exit(0)
+    #print(compute_mean_std(train, "energy_U0"))
+    #import sys
+    #sys.exit(0)
 
     data_point = (next(iter(train)))
     print(data_point)

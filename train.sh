@@ -48,7 +48,7 @@ wait_for_any_job() {
 }
 
 # Main loop
-for MODEL_NUMBER in $(seq 11 "$NUM_MODELS"); do
+for MODEL_NUMBER in $(seq 1 "$NUM_MODELS"); do
   # 1) Wait until we have fewer than MAX_JOBS active processes
   while [ "${#pids[@]}" -ge "$MAX_JOBS" ]; do
     wait_for_any_job
