@@ -48,18 +48,18 @@ wait_for_any_job() {
 }
 
 # Main loop
-for MODEL_NUMBER in $(seq 1 "$NUM_MODELS"); do
+for MODEL_NUMBER in $(seq 11 "$NUM_MODELS"); do
   # 1) Wait until we have fewer than MAX_JOBS active processes
   while [ "${#pids[@]}" -ge "$MAX_JOBS" ]; do
     wait_for_any_job
   done
-  run_job python3 -m torch_main.py "$TARGET_VARIABLE" "$MODEL_NUMBER" false
+  run_job python3 torch_main.py "$TARGET_VARIABLE" "$MODEL_NUMBER" false
 
   # 2) Again wait if we're at the concurrency limit before launching next
   while [ "${#pids[@]}" -ge "$MAX_JOBS" ]; do
     wait_for_any_job
   done
-  run_job python3 -m torch_main.py "$TARGET_VARIABLE" "$MODEL_NUMBER" true
+  run_job python3 torch_main.py "$TARGET_VARIABLE" "$MODEL_NUMBER" true
 done
 
 # Finally, wait for all remaining jobs
