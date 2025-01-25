@@ -14,17 +14,25 @@ def plot_mean_ci(directory, paper_json_path=None):
         print("Required files not found in the specified directory.")
         return
 
+    data = {}
     # Load data
-    with open(not_normalized_file, "r") as f:
-        not_normalized_data = json.load(f)
-    with open(normalized_file, "r") as f:
-        normalized_data = json.load(f)
+    if os.path.exists(not_normalized_file):
+        with open(not_normalized_file, "r") as f:
+            not_normalized_data = json.load(f)
+        if len(not_normalized_data) != 0:
+            data.update({"Ours": not_normalized_data})
+    else:
+        not_normalized_data = None
+
+    if os.path.exists(normalized_file):
+        with open(normalized_file, "r") as f:
+            normalized_data = json.load(f)
+        if len(normalized_data) != 0:
+            data.update({"Ours*": normalized_data})
+    else:
+        normalized_data = None
 
     # Calculate mean, standard error, and 99% confidence interval
-    data = {
-        "Reimplementation*": not_normalized_data,
-        "Reimplementation": normalized_data
-    }
     means = {key: np.mean(values) for key, values in data.items()}
     stds = {key: np.std(values, ddof=1) for key, values in data.items()}  # Use ddof=1 for sample std
     sizes = {key: len(values) for key, values in data.items()}
@@ -52,8 +60,8 @@ def plot_mean_ci(directory, paper_json_path=None):
     sorted_ci_errors = [ci_values[label] for label in sorted_labels]
 
     # Define colors
-    our_results_labels = ["Reimplementation",
-        "Reimplementation*"]
+    our_results_labels = ["Ours*",
+        "Ours"]
     paper_results_labels = [label for label in sorted_labels if label not in our_results_labels]
 
     # Color maps

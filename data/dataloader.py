@@ -21,6 +21,7 @@ def construct_dataloaders(config: ConfigTrain):
             num_workers=config.num_workers,
             split_file=config.split_file,
             pin_memory=config.device != "cpu",
+            property_units={QM9.U0: "eV"}
             #load_properties=[config.prop],
     )
     dataset.prepare_data()
@@ -42,7 +43,11 @@ def prepare_data_point(data, feature_dim, key, device, normalize):
         directions = positions[idx_j] - positions[idx_i]
 
         # Fetch target (e.g. property to predict)
-        target = normalize(data[key]).to(device)
+        target = data[key]
+        if key == QM9.U0:
+            target *= 1000
+
+        target = normalize(target).to(device)
 
         input_data =  {"v": v0.to(device),
                        "s": s0.to(device),
@@ -54,7 +59,7 @@ def prepare_data_point(data, feature_dim, key, device, normalize):
         return input_data, target
 
 
-def compute_mean_std(dataloader, key):
+def compute_mean_std(dataloader, key, scale=1):
 
     n = 0
     total = 0
@@ -62,14 +67,14 @@ def compute_mean_std(dataloader, key):
     for item in dataloader:
         item = item[key]
         n += len(item)
-        total += item.sum()
+        total += item.sum()/scale
 
     mean = total/n
 
     std = 0
 
     for item in dataloader:
-        item = item[key]
+        item = item[key]/scale
         std += ((mean - item) ** 2).sum()
 
     std = (std/n)**0.5

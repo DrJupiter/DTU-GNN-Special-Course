@@ -35,7 +35,7 @@ config = (
     .set_train_size(100_000)
     .set_validation_size(15_000)
     .set_batch_size(100)
-    .set_num_workers(6)
+    .set_num_workers(1)
     .set_radius(3.)
     .set_seed(SEED)
     .set_target_key(TARGET)
@@ -92,7 +92,7 @@ def update_ema(model, ema_params, decay):
             ema_params[name].data.mul_(decay).add_(param.data, alpha=1 - decay)
 
 # 7. Training loop
-num_epochs = 5
+num_epochs = 100
 print(f"Starting training for {num_epochs} epochs...")
 
 for epoch in range(num_epochs):
